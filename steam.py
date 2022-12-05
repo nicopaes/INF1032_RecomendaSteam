@@ -3,16 +3,9 @@ import json
 import asyncio
 
 key = ""
-# steam_id = 76561198018909519
-steam_id = 76561198068311174
-getownedgameAPI = f'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={key}&steamid={steam_id}&format=json'
-getrecentgameAPI = f'http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key={key}&steamid={steam_id}&format=json'
-
 
 async def GetAppDetailsAsync(appid):
     return await requests.get(f'https://store.steampowered.com/api/appdetails?appids={appid}')
-
-
 
 def GetAppDetails(appid):
     appidtext = str(appid)
@@ -28,19 +21,6 @@ def GetAppDetails(appid):
     else:
         print(f'Code not 200 {appid}')
         return None
-
-# getSteamLibrary = requests.get(getownedgameAPI)
-
-# text = getSteamLibrary.text
-# jsonResponse = json.loads(text)['response']
-# print(jsonResponse)
-
-# game_count = jsonResponse['game_count']
-# # print(game_count)
-
-# games = jsonResponse['games']
-# # print(games)
-
 
 def createListPlayedGames(games):
     gamelist = []
@@ -59,12 +39,65 @@ def createListPlayedGames(games):
                 print(len(gamelist))
     return gamelist
 
-getRecentLibrary = requests.get(getrecentgameAPI)
+def GetOwnedGames(steam_id):    
+    gamelist = []
+    ##
+    getownedgames = f'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={key}&steamid={steam_id}&format=json'
+    getOwnedLibrary = requests.get(getownedgames)
+    text = getOwnedLibrary.text
+    jsonResponse = json.loads(text)['response']
+    total_count = jsonResponse['game_count']
+    if(total_count > 0):
+        games = jsonResponse['games']
+        for i in range(int(total_count) - 1):
+            game = games[i]
+            appid = game['appid']
+            playtimeforever = game['playtime_forever']
+            appinfo = GetAppDetails(appid)
+            if (appinfo == None):
+                print(appid)
+            else:
+                if (playtimeforever > 0):
+                    gamename = appinfo['name']
+                    gamelist.append(
+                        {"name": gamename, "playtimeforever": playtimeforever})
+    return sorted(gamelist, key= lambda game: game["playtimeforever"], reverse=True)
 
-# text = getRecentLibrary.text
-# jsonResponse = json.loads(text)['response']
-# print(jsonResponse)
+def GetRecentPlayerGames(steam_id):    
+    gamelist = []
+    ##
+    getrecentgameAPI = f'http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key={key}&steamid={steam_id}&format=json'
+    getRecentLibrary = requests.get(getrecentgameAPI)
+    text = getRecentLibrary.text
+    jsonResponse = json.loads(text)['response']
+    total_count = jsonResponse['total_count']
+    if(total_count > 0):
+        games = jsonResponse['games']
+        for i in range(int(total_count) - 1):
+            game = games[i]
+            appid = game['appid']
+            name = game["name"]
+            playtimeforever = game['playtime_forever']
+            gamelist.append(
+                    {"appid": appid,"name": name, "playtimeforever": playtimeforever})
+    return sorted(gamelist, key= lambda game: game["playtimeforever"], reverse=True)
 
+def CreateGameList(steamid):
+    finalist = []
+    gamerecent = GetRecentPlayerGames(steamid)
+    if(len(gamerecent) < 5):
+        gameowned = GetOwnedGames(steamid)
+        finalist = [x for x in gamerecent[0:len(gamerecent)]]
+        for i in range(len(gameowned)):
+            if(len(finalist) == 5):
+                return sorted(finalist, key= lambda game: game["playtimeforever"], reverse=True)                 
+            else:
+                if(gameowned[i] not in finalist):
+                    finalist.append(gameowned[i])            
+    else:
+        return gamerecent[:5]
+
+print(CreateGameList(76561198068311174))
 
 # gameList = createListPlayedGames(games)
 # with open(f'{steam_id}_gamelist.json', 'w') as file:
@@ -72,5 +105,3 @@ getRecentLibrary = requests.get(getrecentgameAPI)
 #     json.dump(gameList, file, indent=2)
 #     print(f"New json file is created from steamid {steam_id}")
 
-
-print(GetAppDetails(379720))

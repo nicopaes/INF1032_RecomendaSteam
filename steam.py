@@ -22,23 +22,6 @@ def GetAppDetails(appid):
         print(f'Code not 200 {appid}')
         return None
 
-def createListPlayedGames(games):
-    gamelist = []
-    for i in range(int(game_count) - 1):
-        game = games[i]
-        appid = game['appid']
-        playtimeforever = game['playtime_forever']
-        appinfo = GetAppDetails(appid)
-        if (appinfo == None):
-            print(appid)
-        else:
-            if (playtimeforever > 0):
-                gamename = appinfo['name']
-                gamelist.append(
-                    {"name": gamename, "playtimeforever": playtimeforever})
-                print(len(gamelist))
-    return gamelist
-
 def GetOwnedGames(steam_id):    
     gamelist = []
     ##
